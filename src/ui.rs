@@ -52,9 +52,10 @@ pub fn values(values: &[(&str, &str)]) -> String {
     })
 }
 
-/// A button that sends `event`. `label` is HTML.
-pub fn button(label: &str, event: &str, vals: &[(&str, &str)], class: &str, enabled: bool) -> String {
-    format!(r#"<button class="btn {class}" fx-click="{event}"{}{}>{label}</button>"#, values(vals), if enabled { "" } else { " disabled" })
+/// The class that indents something `depth` levels into a tree: the page
+/// refuses style attributes.
+pub fn depth(depth: usize) -> String {
+    if depth == 0 { String::new() } else { format!("d{}", depth.min(12)) }
 }
 
 /// `disabled` when not `enabled`.
@@ -206,7 +207,7 @@ pub fn area_chart(series: &[(&[f64], &str)], height: u32) -> String {
     let width = 400.0;
     let h = f64::from(height);
     let max = series.iter().flat_map(|(s, _)| s.iter().copied()).fold(0.0f64, f64::max).max(1.0) * 1.15;
-    let mut out = format!(r#"<svg class="chart" viewBox="0 0 400 {height}" preserveAspectRatio="none" style="height:{height}px" aria-hidden="true">"#);
+    let mut out = format!(r#"<svg class="chart" viewBox="0 0 400 {height}" preserveAspectRatio="none" height="{height}" aria-hidden="true">"#);
     for g in [0.33, 0.66] {
         let _ = write!(out, r#"<line x1="0" x2="400" y1="{y:.1}" y2="{y:.1}" stroke="var(--border-subtle)" stroke-width="1"/>"#, y = h * g);
     }

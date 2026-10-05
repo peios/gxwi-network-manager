@@ -89,17 +89,29 @@ impl fmt::Display for Layer {
 }
 
 /// One condition: the value `<fact>.<op>` and what it holds.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub struct Cond {
     pub fact: String,
     pub op: String,
     /// The items: one, or several meaning any of them.
     pub items: Vec<String>,
+    /// The value as read, so that a condition left alone is written back
+    /// as it was, list or number or text.
+    was: Option<Value>,
 }
+
+/// Two conditions are the same when they test the same thing the same way.
+impl PartialEq for Cond {
+    fn eq(&self, other: &Cond) -> bool {
+        self.fact == other.fact && self.op == other.op && self.items == other.items
+    }
+}
+
+impl Eq for Cond {}
 
 impl Cond {
     pub fn new(fact: &str, op: &str, items: &[&str]) -> Cond {
-        Cond { fact: fact.into(), op: op.into(), items: items.iter().map(|s| s.to_string()).collect() }
+        Cond { fact: fact.into(), op: op.into(), items: items.iter().map(|s| s.to_string()).collect(), was: None }
     }
 
     /// The value name it is written as.
@@ -116,6 +128,11 @@ impl Cond {
     /// a number where the fact compares numbers and the item is one, as
     /// `Present` always is; else the text.
     pub fn value(&self) -> Value {
+        if let Some(was) = &self.was
+            && was.as_list().as_ref() == Some(&self.items)
+        {
+            return was.clone();
+        }
         if self.items.len() > 1 {
             return Value::List(self.items.clone());
         }
@@ -167,7 +184,7 @@ impl Rule {
                     None => rule.other.push((name.clone(), value.clone())),
                 }
             } else if let (Some((fact, op)), Some(items)) = (name.rsplit_once('.'), value.as_list()) {
-                rule.conds.push(Cond { fact: fact.into(), op: op.into(), items });
+                rule.conds.push(Cond { fact: fact.into(), op: op.into(), items, was: Some(value.clone()) });
             } else {
                 rule.other.push((name.clone(), value.clone()));
             }
@@ -291,10 +308,6 @@ pub fn count(forest: &[Rule]) -> usize {
     walk(forest).len()
 }
 
-/// The deepest rule's depth, a root being 0.
-pub fn depth(forest: &[Rule]) -> usize {
-    walk(forest).iter().map(|(_, d, _)| *d).max().unwrap_or(0)
-}
 
 /// A name a rule may have: what a registry key may be called, and what
 /// PNP attributes a decision to.
@@ -525,6 +538,16 @@ mod tests {
     }
 
     #[test]
+    fn a_condition_left_alone_keeps_its_type() {
+        let mut tree = Tree::new("ssh");
+        tree.values = vec![("DstPort.Equal".into(), Value::List(vec!["22".into()])), ("SrcPort.Equal".into(), Value::Int(67))];
+        let mut rule = Rule::from_tree(&tree);
+        assert_eq!(rule.values()[..2], tree.values[..]);
+        rule.conds[0].items = vec!["2222".into()];
+        assert_eq!(rule.values()[0].1, Value::Int(2222));
+    }
+
+    #[test]
     fn a_rule_is_found_put_and_removed_by_its_path() {
         let mut forest = vec![ssh()];
         assert_eq!(find(&forest, "ssh/too-fast").map(|r| r.report()), Some(Some(3)));
@@ -532,7 +555,6 @@ mod tests {
         lan.actions = vec!["PASS".into()];
         assert!(put(&mut forest, "ssh/lan", lan));
         assert_eq!(count(&forest), 3);
-        assert_eq!(depth(&forest), 1);
         let replaced = Rule::new("ignored");
         assert!(put(&mut forest, "ssh", replaced));
         assert_eq!(find(&forest, "ssh").map(|r| r.children.len()), Some(2));

@@ -463,6 +463,9 @@ pub enum Part {
     Decides,
     /// It matched and spoke, but another rule outranked it.
     Outranked,
+    /// It matched and said the same as the rule that decided, at the same
+    /// priority: either could have been named.
+    Agrees,
     /// It matched, but an exception inside it matched too and speaks
     /// for the connection.
     Shadowed,
@@ -502,6 +505,8 @@ pub struct Decision {
     pub speakers: usize,
     /// More than one spoke at the winning priority, and the stricter won.
     pub tie: bool,
+    /// How many spoke at the winning priority with the winning verdict.
+    pub agreeing: usize,
     pub steps: Vec<Step>,
 }
 
@@ -554,11 +559,13 @@ fn held(cond: &Cond, built: &pnp_core::Rule, forest: &pnp_core::Forest, snap: &S
 }
 
 /// Traces one forest's rules against a snapshot, given the evaluation.
-fn trace(mine: &[Rule], built: &pnp_core::Forest, snap: &Snapshot<'_>, winner: &str) -> Vec<Step> {
+fn trace(mine: &[Rule], built: &pnp_core::Forest, snap: &Snapshot<'_>, winner: &str, top: Option<(pnp_core::Verdict, i64)>) -> Vec<Step> {
     struct Walk<'s, 'a> {
         forest: &'s pnp_core::Forest,
         snap: &'s Snapshot<'a>,
         winner: &'s str,
+        /// The deciding verdict and its priority.
+        top: Option<(pnp_core::Verdict, i64)>,
         out: Vec<Step>,
     }
     impl Walk<'_, '_> {
@@ -596,7 +603,13 @@ fn trace(mine: &[Rule], built: &pnp_core::Forest, snap: &Snapshot<'_>, winner: &
             self.out[at].part = if any {
                 Part::Shadowed
             } else if built.has_direct_verdict() {
-                if path == self.winner { Part::Decides } else { Part::Outranked }
+                if path == self.winner {
+                    Part::Decides
+                } else if built.direct_verdict().zip(Some(built.priority)) == self.top {
+                    Part::Agrees
+                } else {
+                    Part::Outranked
+                }
             } else {
                 match voices.last() {
                     Some(up) => Part::Inherits(up.clone()),
@@ -606,7 +619,7 @@ fn trace(mine: &[Rule], built: &pnp_core::Forest, snap: &Snapshot<'_>, winner: &
             true
         }
     }
-    let mut walk = Walk { forest: built, snap, winner, out: Vec::new() };
+    let mut walk = Walk { forest: built, snap, winner, top, out: Vec::new() };
     for root in built.roots.iter() {
         if let Some(own) = mine.iter().find(|r| r.name == root.name.as_str()) {
             walk.rule(own, root, own.name.clone(), 0, &[]);
@@ -620,8 +633,8 @@ fn decide(layer: Layer, mine: &[Rule], built: &pnp_core::Forest, snap: &Snapshot
     let e = pnp_core::evaluate(built, snap, &EvalContext::default()).map_err(|_| "Out of memory.".to_string())?;
     let winner = e.attributed_to.as_str().to_string();
     let top = e.candidates.iter().map(|c| c.priority).max().unwrap_or(0);
-    let at_top = e.candidates.iter().filter(|c| c.priority == top).count();
-    let steps = trace(mine, built, snap, &winner);
+    let at_top: Vec<&pnp_core::VerdictCandidate> = e.candidates.iter().filter(|c| c.priority == top).collect();
+    let steps = trace(mine, built, snap, &winner, (!e.backstop).then_some((e.verdict, top)));
     // An abstaining rule's ancestor is attributed the decision: it is the
     // rule that decided, though it reached it through its exception.
     Ok(Decision {
@@ -630,7 +643,8 @@ fn decide(layer: Layer, mine: &[Rule], built: &pnp_core::Forest, snap: &Snapshot
         by: (!e.backstop).then_some(winner),
         priority: if e.backstop { 0 } else { top },
         speakers: e.candidates.len(),
-        tie: at_top > 1 && e.candidates.iter().filter(|c| c.priority == top).any(|c| c.verdict != e.verdict),
+        tie: at_top.iter().any(|c| c.verdict != e.verdict),
+        agreeing: at_top.iter().filter(|c| c.verdict == e.verdict).count(),
         steps,
     })
 }

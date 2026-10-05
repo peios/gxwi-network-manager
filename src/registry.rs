@@ -287,10 +287,6 @@ impl Batch {
         self.0.push(edit);
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
     /// Makes every change, as one transaction.
     ///
     /// loregd holds back an open while a transaction that has written is

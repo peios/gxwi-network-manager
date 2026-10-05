@@ -1,0 +1,6 @@
+# What Network Manager is to a desktop (PGSS Applications): installed as
+# /usr/share/apps/dev.peios.gxwi-network-manager.toml, named for the id, by
+# the package that installs the program. It is a window and nothing else.
+title = "Network Manager"
+description = "See and change this machine's networks, profiles, name resolution and firewall"
+program = "/usr/bin/gxwi-network-manager"

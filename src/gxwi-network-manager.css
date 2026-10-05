@@ -91,8 +91,8 @@ main.main { flex: 1; min-width: 0; overflow-y: auto; }
 .tag.custom { background: none; border: 1px solid var(--border-strong); font-style: italic; }
 
 /* Overview: the machine, its interfaces, the networks they stand on. */
-.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--border-default); border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; margin: 0 0 var(--s5); }
-.summary > div { background: var(--surface-solid); padding: var(--s3) var(--s4); display: grid; gap: 2px; min-width: 0; }
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); background: var(--surface-solid); border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; margin: 0 0 var(--s5); }
+.summary > div { padding: var(--s3) var(--s4); display: grid; gap: 2px; min-width: 0; box-shadow: -1px 0 0 var(--border-default), 0 -1px 0 var(--border-default); }
 .summary .k { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
 .summary .v { font: 650 15px/1.3 var(--font-display); overflow-wrap: anywhere; }
 .summary .v.mono { font: 600 13px/1.5 var(--font-mono); }
@@ -256,9 +256,10 @@ tr:hover .rowact, tr:focus-within .rowact, .rowact:focus-visible { opacity: 1; }
 .acthelp { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
 
 .portbar { position: relative; height: 34px; margin: 22px 0; border-radius: 6px; background: var(--good-soft); }
-.portbar .range { position: absolute; top: 0; bottom: 0; border-radius: 6px; background: var(--warn-soft); border: 1px solid var(--warn); box-sizing: border-box; }
-.portbar .pin { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1px; border-radius: 2px; background: var(--accent-solid); }
-.portbar .pin span { position: absolute; bottom: calc(100% + 3px); left: 50%; transform: translateX(-50%); font: 600 10.5px var(--font-mono); color: var(--accent-solid); white-space: nowrap; }
+.portbar .range { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.portbar .pin { fill: var(--accent-solid); }
+.portbar .pinlbl { position: absolute; bottom: calc(100% + 6px); transform: translateX(-50%); font: 600 10.5px var(--font-mono); color: var(--accent-solid); white-space: nowrap; }
+.btn.inline { padding: 0; height: auto; }
 .portbar .lbl2 { position: absolute; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
 .portaxis { display: flex; justify-content: space-between; font: 500 10.5px var(--font-mono); color: var(--text-muted); margin-top: -18px; }
 .who { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -418,6 +419,61 @@ details.more summary { color: var(--text-secondary); font-size: 12px; font-weigh
 .status .force.busy i { background: var(--warn); animation: blink .8s ease-in-out infinite; }
 .status .force.bad i { background: var(--bad); }
 @keyframes blink { 50% { opacity: .3; } }
+
+/* The page refuses style attributes (style-src 'self'): what would be one
+   is a class here. Depth in a tree, by levels; a place along the port bar,
+   by whole percent. */
+.d1 { --d: 1; } .d2 { --d: 2; } .d3 { --d: 3; } .d4 { --d: 4; } .d5 { --d: 5; } .d6 { --d: 6; }
+.d7 { --d: 7; } .d8 { --d: 8; } .d9 { --d: 9; } .d10 { --d: 10; } .d11 { --d: 11; } .d12 { --d: 12; }
+.ptree button { --d: 0; }
+.ptree button.d1 { --d: 1; } .ptree button.d2 { --d: 2; } .ptree button.d3 { --d: 3; } .ptree button.d4 { --d: 4; } .ptree button.d5 { --d: 5; } .ptree button.d6 { --d: 6; }
+.at0 { left: 0%; } .at1 { left: 1%; } .at2 { left: 2%; } .at3 { left: 3%; } .at4 { left: 4%; } .at5 { left: 5%; } .at6 { left: 6%; } .at7 { left: 7%; } .at8 { left: 8%; } .at9 { left: 9%; }
+.at10 { left: 10%; } .at11 { left: 11%; } .at12 { left: 12%; } .at13 { left: 13%; } .at14 { left: 14%; } .at15 { left: 15%; } .at16 { left: 16%; } .at17 { left: 17%; } .at18 { left: 18%; } .at19 { left: 19%; }
+.at20 { left: 20%; } .at21 { left: 21%; } .at22 { left: 22%; } .at23 { left: 23%; } .at24 { left: 24%; } .at25 { left: 25%; } .at26 { left: 26%; } .at27 { left: 27%; } .at28 { left: 28%; } .at29 { left: 29%; }
+.at30 { left: 30%; } .at31 { left: 31%; } .at32 { left: 32%; } .at33 { left: 33%; } .at34 { left: 34%; } .at35 { left: 35%; } .at36 { left: 36%; } .at37 { left: 37%; } .at38 { left: 38%; } .at39 { left: 39%; }
+.at40 { left: 40%; } .at41 { left: 41%; } .at42 { left: 42%; } .at43 { left: 43%; } .at44 { left: 44%; } .at45 { left: 45%; } .at46 { left: 46%; } .at47 { left: 47%; } .at48 { left: 48%; } .at49 { left: 49%; }
+.at50 { left: 50%; } .at51 { left: 51%; } .at52 { left: 52%; } .at53 { left: 53%; } .at54 { left: 54%; } .at55 { left: 55%; } .at56 { left: 56%; } .at57 { left: 57%; } .at58 { left: 58%; } .at59 { left: 59%; }
+.at60 { left: 60%; } .at61 { left: 61%; } .at62 { left: 62%; } .at63 { left: 63%; } .at64 { left: 64%; } .at65 { left: 65%; } .at66 { left: 66%; } .at67 { left: 67%; } .at68 { left: 68%; } .at69 { left: 69%; }
+.at70 { left: 70%; } .at71 { left: 71%; } .at72 { left: 72%; } .at73 { left: 73%; } .at74 { left: 74%; } .at75 { left: 75%; } .at76 { left: 76%; } .at77 { left: 77%; } .at78 { left: 78%; } .at79 { left: 79%; }
+.at80 { left: 80%; } .at81 { left: 81%; } .at82 { left: 82%; } .at83 { left: 83%; } .at84 { left: 84%; } .at85 { left: 85%; } .at86 { left: 86%; } .at87 { left: 87%; } .at88 { left: 88%; } .at89 { left: 89%; }
+.at90 { left: 90%; } .at91 { left: 91%; } .at92 { left: 92%; } .at93 { left: 93%; } .at94 { left: 94%; } .at95 { left: 95%; } .at96 { left: 96%; } .at97 { left: 97%; } .at98 { left: 98%; } .at99 { left: 99%; } .at100 { left: 100%; }
+.portbar svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.portbar .lbl2.first { left: 12px; }
+.portbar .lbl2.after { margin-left: 12px; }
+.legend i.good, .bundlekey i.good { background: var(--good); }
+.legend i.warn, .bundlekey i.warn { background: var(--warn); }
+.legend i.bad { background: var(--bad); }
+.legend i.accent, .bundlekey i.accent { background: var(--accent-solid); }
+.legend i.violet { background: var(--violet); }
+.gap-top { margin-top: 12px; }
+.gap-top8 { margin-top: 8px; }
+.gap-top16 { margin-top: 16px; }
+.footnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+.inline-form { display: contents; }
+.addrow { border-top: 1px solid var(--border-subtle); }
+.hint { color: var(--text-muted); font-size: 11.5px; }
+.buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+.fld.left { justify-items: start; }
+.inp.w100 { width: 100px; } .inp.w130 { width: 130px; } .inp.w180 { width: 180px; } .inp.w260 { width: 260px; }
+.step .v.dim { color: var(--text-muted); }
+.step .v.bad { color: var(--bad); }
+.measuring { font-size: 12px; color: var(--text-muted); padding: 24px 0; }
+.empty-line { font-size: 12.5px; color: var(--text-muted); padding: 6px 0; }
+.empty-note { margin: 0 0 10px; color: var(--text-muted); }
+.bad-text { color: var(--bad); }
+.small-mono { font-size: 11.5px; }
+.h14 { font-size: 14px; }
+.plain { font-family: var(--font-text); font-weight: 650; }
+.minw0 { min-width: 0; }
+.chosen { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+.chosen b { font: 650 16px var(--font-display); }
+.chosen .muted { margin-left: auto; font-size: 12px; }
+.checkrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+.checkrow .fld { margin: 0; }
+.keepbar progress { width: 120px; height: 5px; appearance: none; border: 0; border-radius: var(--radius-pill); background: var(--surface-2); overflow: hidden; }
+.keepbar progress::-webkit-progress-bar { background: var(--surface-2); }
+.keepbar progress::-webkit-progress-value { background: var(--warn); transition: width 1s linear; }
+.keepbar progress::-moz-progress-bar { background: var(--warn); }
 
 @media (max-width: 820px) {
     nav.side { width: 52px; padding: var(--s2) 5px; }

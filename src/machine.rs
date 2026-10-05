@@ -106,8 +106,10 @@ pub struct Reservation {
 }
 
 impl Reservation {
+    /// The default reservation is the key's unnamed value, which `reg`
+    /// shows as `@`.
     pub fn is_default(&self) -> bool {
-        self.selector == "@"
+        self.selector.is_empty() || self.selector == "@"
     }
 
     /// The protocols, and the inclusive port range, it covers.
@@ -117,6 +119,54 @@ impl Reservation {
         }
         parse_selector(&self.selector)
     }
+}
+
+/// Services a per-service SID may be, by name: the authority names
+/// accounts, not every service, so a service's SID is matched by deriving
+/// it from the name, as peinit does.
+const SERVICES: &[&str] = &["sshd", "gxwid", "gxwi-server", "resolvd", "netd", "timed", "pnpd", "atriumd", "authd", "eventd", "loregd", "installerd", "peinit"];
+
+/// What a SID the authority could not name is, when it can be told: a
+/// service's own SID, or a capability.
+fn known_name(sid: &str) -> Option<String> {
+    if sid.starts_with("S-1-5-80-") {
+        return SERVICES.iter().find(|s| pnp_core::Sid::service(s).to_string() == sid).map(|s| format!("{s} service"));
+    }
+    sid.starts_with("S-1-15-3-").then(|| "A capability".to_string())
+}
+
+/// A descriptor's access list as (SID, allows, mask), in order: what it
+/// grants and denies, and to whom.
+pub fn grants(sd: &[u8]) -> Vec<(String, bool, u32)> {
+    use peios::security::{AceType, SdView};
+    let Ok(view) = SdView::parse(sd) else { return Vec::new() };
+    let Some(dacl) = view.dacl() else { return Vec::new() };
+    dacl.iter()
+        .filter_map(|ace| {
+            let allows = match ace.ace_type() {
+                AceType::AccessAllowed => true,
+                AceType::AccessDenied => false,
+                _ => return None,
+            };
+            Some((ace.sid()?.to_string(), allows, ace.mask()))
+        })
+        .collect()
+}
+
+/// Whether a token with `sids` is granted `right` by `sd`: its access list
+/// read in order, a denial before a grant winning, as the kernel reads it.
+/// An absent list grants everything; an empty one, nothing.
+pub fn granted(sd: &[u8], sids: &[String], right: u32) -> bool {
+    use peios::security::SdView;
+    if SdView::parse(sd).ok().is_some_and(|v| v.dacl().is_none()) {
+        return true;
+    }
+    for (sid, allows, mask) in grants(sd) {
+        if mask & right != 0 && sids.iter().any(|s| *s == sid) {
+            return allows;
+        }
+    }
+    false
 }
 
 pub fn parse_selector(selector: &str) -> Option<(Vec<String>, u16, u16)> {
@@ -139,6 +189,9 @@ pub fn parse_selector(selector: &str) -> Option<(Vec<String>, u16, u16)> {
 #[derive(Debug, Clone, Default)]
 pub struct Config {
     pub policy: Policy,
+    /// The `Rules` key exactly as read: what undoing a change to the rules
+    /// writes back, byte for byte.
+    pub rules: Option<Tree>,
     pub networks: Vec<Network>,
     pub inventory: Vec<Inventory>,
     /// `CurrentReportingLevel`: 1..6, 6 silencing every report.
@@ -153,6 +206,9 @@ pub struct Config {
     pub netd_security: Option<Vec<u8>>,
     pub resolvd_security: Option<Vec<u8>>,
     pub desktop_port: u16,
+    /// What each SID in a descriptor shown is called, by its `S-1-…` text:
+    /// asked of the authority while reading, so a render never waits.
+    pub names: BTreeMap<String, String>,
     /// Why the registry couldn't be read, if it couldn't.
     pub error: Option<String>,
     /// What the person may change.
@@ -204,6 +260,7 @@ pub fn read_config() -> Config {
         interface: rules::forest(rules_key.and_then(|r| r.child(Layer::Interface.key()))),
         profiles: root.child("Profiles").cloned(),
     };
+    config.rules = rules_key.cloned();
     config.reporting = rules_key.and_then(|r| r.value("CurrentReportingLevel")).and_then(Value::as_int).map(|l| l.clamp(1, 6) as u8).unwrap_or(1);
     config.networks = root.child("Networks").map(|n| n.children.iter().map(Network::from_tree).collect()).unwrap_or_default();
     config.networks.sort_by(|a, b| b.last_seen.cmp(&a.last_seen).then(a.id.cmp(&b.id)));
@@ -255,6 +312,17 @@ pub fn read_config() -> Config {
         _ => None,
     };
     config.desktop_port = registry::value(GXWI_KEY, "Listen").and_then(|v| v.as_str().and_then(|s| s.rsplit(':').next()).and_then(|p| p.parse().ok())).unwrap_or(DESKTOP_PORT);
+    let mut names = gxwi_sd_editor::names::Names::new();
+    let descriptors = config.reservations.iter().map(|r| r.sd.as_slice()).chain(config.netd_security.as_deref()).chain(config.resolvd_security.as_deref());
+    for sd in descriptors {
+        for (sid, _, _) in grants(sd) {
+            if let Ok(parsed) = sid.parse::<peios::security::Sid>() {
+                names.learn(&parsed);
+                let name = if names.named(&parsed) { names.of(&parsed) } else { known_name(&sid).unwrap_or_else(|| names.of(&parsed)) };
+                config.names.insert(sid.clone(), name);
+            }
+        }
+    }
     let may = |path: &str| registry::may_change(path);
     let rules_path = format!("{NETWORK_KEY}\\Rules");
     config.may = May {
@@ -611,18 +679,6 @@ pub fn read_state(config: &Config) -> State {
     };
     state.sessions = sessions(config.desktop_port, &state.interfaces, config);
     state
-}
-
-/// Bytes received and sent by each interface: what the traffic chart is
-/// drawn from, read on its own as it is read more often.
-pub fn counters(names: &[String]) -> BTreeMap<String, (u64, u64)> {
-    names
-        .iter()
-        .map(|n| {
-            let read = |what: &str| sys(n, what).and_then(|v| v.parse().ok()).unwrap_or(0);
-            (n.clone(), (read("statistics/rx_bytes"), read("statistics/tx_bytes")))
-        })
-        .collect()
 }
 
 #[cfg(test)]
