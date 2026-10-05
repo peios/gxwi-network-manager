@@ -1046,11 +1046,12 @@ impl Manager {
         let may = registry_may(&key);
         let window = self.window.clone();
         let request = gxwi_sd_editor::Request {
-            object: gxwi_sd_editor::Object { name: what.into(), kind: "Setting".into(), container: false, children: gxwi_sd_editor::Children::All },
+            object: gxwi_sd_editor::Object { name: what.into(), kind: "Setting".into(), container: false, children: gxwi_sd_editor::Children::All, ..Default::default() },
             sd: current.clone(),
             rights,
             generic,
-            can: gxwi_sd_editor::Can { dacl: may, owner: may, audit: false, why: (!may).then(|| ui::LOCKED.to_string()) },
+            can: gxwi_sd_editor::Can { dacl: may, owner: may, why: (!may).then(|| ui::LOCKED.to_string()), ..Default::default() },
+            ..Default::default()
         };
         let mut held = current;
         let apply_window = self.window.clone();
