@@ -56,6 +56,26 @@ fn lane(m: &Manager, i: &Interface) -> String {
 fn lease(i: &Interface) -> String {
     let Some(l) = &i.status.lease else { return String::new() };
     let state = l.state.to_ascii_lowercase();
+    // The lease's whole span, how much of it has gone, and where the client
+    // starts renewing and rebinding; a netd too old to say gets the stages.
+    if l.duration > 0 {
+        let used = l.duration.saturating_sub(l.expires_in);
+        let at = |secs: u64| ((secs as f64 / l.duration as f64) * 100.0).round().clamp(0.0, 100.0) as u32;
+        let stage = match state.as_str() {
+            "renewing" => r#" <span class="tag warn">Renewing</span>"#,
+            "rebinding" => r#" <span class="tag bad">Rebinding</span>"#,
+            _ => "",
+        };
+        return format!(
+            r#"<div class="minihead gap">DHCP lease{stage}</div><div class="leasebar"><progress max="{}" value="{used}"></progress><b class="at{}"><span>Renew</span></b><b class="at{}"><span>Rebind</span></b></div><div class="leaselbl"><span>Obtained {} ago from {}</span><span>Expires in {}</span></div>"#,
+            l.duration,
+            at(l.renew_at),
+            at(l.rebind_at),
+            duration(used),
+            h(&l.server),
+            duration(l.expires_in)
+        );
+    }
     let step = |name: &str, about: &str| format!(r#"<span class="{}">{}<small>{}</small></span>"#, if state.starts_with(&name.to_ascii_lowercase()) { "on" } else { "" }, name, about);
     format!(
         r#"<div class="minihead gap">DHCP lease</div><div class="leasesteps">{}{}{}</div><div class="leaselbl"><span>From {}</span><span>Expires in {}</span></div>"#,
