@@ -190,7 +190,7 @@ pub fn built_in(layer: Layer, path: &str) -> bool {
 pub fn rule_table(m: &Manager, forest: &[Rule], layer: Layer) -> String {
     let may = m.may_rules();
     let mut rows = String::new();
-    fn walk(m: &Manager, list: &[Rule], base: &str, depth: usize, inherited: i64, layer: Layer, may: bool, rows: &mut String) {
+    fn walk(list: &[Rule], base: &str, depth: usize, inherited: i64, layer: Layer, may: bool, rows: &mut String) {
         for r in list {
             let path = if base.is_empty() { r.name.clone() } else { format!("{base}/{}", r.name) };
             let priority = r.priority.unwrap_or(inherited);
@@ -213,10 +213,10 @@ pub fn rule_table(m: &Manager, forest: &[Rule], layer: Layer) -> String {
                 h(&r.name),
                 svg("plus")
             );
-            walk(m, &r.children, &path, depth + 1, priority, layer, may, rows);
+            walk(&r.children, &path, depth + 1, priority, layer, may, rows);
         }
     }
-    walk(m, forest, "", 0, 0, layer, may, &mut rows);
+    walk(forest, "", 0, 0, layer, may, &mut rows);
     if rows.is_empty() {
         rows = r#"<tr><td colspan="5" class="muted">No rules.</td></tr>"#.into();
     }

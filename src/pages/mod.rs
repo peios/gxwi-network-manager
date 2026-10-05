@@ -75,9 +75,10 @@ fn status(m: &Manager) -> String {
         (Some(what), _) => format!(r#"<span class="force busy"><i></i>{}…</span>"#, h(what)),
         (None, Some(errno)) => format!(r#"<span class="force bad"><i></i>Refused (error {errno}): generation {} stands</span>"#, m.live.engine.generation),
         (None, None) => format!(
-            r#"<span class="force" title="{}"><i></i>Policy in force · generation {}</span>"#,
-            if m.live.example { "Example: the firewall's state can't be read by programs yet" } else { "" },
-            m.live.engine.generation
+            r#"<span class="force" title="{}"><i></i>Policy in force · generation {}{}</span>"#,
+            if m.live.example { "The firewall's state can't be read by programs yet: this is example data" } else { "" },
+            m.live.engine.generation,
+            if m.live.example { r#" <span class="tag violet">Example</span>"# } else { "" }
         ),
     };
     format!(r#"<div class="status">{said}{force}</div>"#)
@@ -125,7 +126,7 @@ pub fn drawer(title: &str, body: &str, foot: &str) -> String {
 
 pub fn render(m: &Manager, fields: &Fields) -> String {
     let page = if !m.read {
-        format!(r#"<div class="phead"><div class="grow"><h1>Network</h1><p>Reading…</p></div></div>"#)
+        r#"<div class="phead"><div class="grow"><h1>Network</h1><p>Reading…</p></div></div>"#.to_string()
     } else {
         match m.view {
             View::Overview => overview::page(m),

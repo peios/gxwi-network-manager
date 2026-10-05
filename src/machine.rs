@@ -162,7 +162,7 @@ pub fn granted(sd: &[u8], sids: &[String], right: u32) -> bool {
         return true;
     }
     for (sid, allows, mask) in grants(sd) {
-        if mask & right != 0 && sids.iter().any(|s| *s == sid) {
+        if mask & right != 0 && sids.contains(&sid) {
             return allows;
         }
     }

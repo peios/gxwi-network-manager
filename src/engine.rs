@@ -600,7 +600,11 @@ fn trace(mine: &[Rule], built: &pnp_core::Forest, snap: &Snapshot<'_>, winner: &
                 let Some(own) = mine.children.iter().find(|r| r.name == name) else { continue };
                 any |= self.rule(own, child, format!("{path}/{name}"), depth + 1, &voices);
             }
-            self.out[at].part = if any {
+            // A rule whose exception has no verdict of its own decides for
+            // it, and is named as deciding.
+            self.out[at].part = if any && path == self.winner {
+                Part::Decides
+            } else if any {
                 Part::Shadowed
             } else if built.has_direct_verdict() {
                 if path == self.winner {

@@ -249,7 +249,7 @@ pub fn find<'a>(forest: &'a [Rule], path: &str) -> Option<&'a Rule> {
     found
 }
 
-pub fn find_mut<'a>(forest: &'a mut Vec<Rule>, path: &str) -> Option<&'a mut Rule> {
+pub fn find_mut<'a>(forest: &'a mut [Rule], path: &str) -> Option<&'a mut Rule> {
     let mut parts = path.split('/');
     let first = parts.next()?;
     let mut rule = forest.iter_mut().find(|r| r.name.eq_ignore_ascii_case(first))?;

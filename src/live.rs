@@ -202,9 +202,10 @@ pub fn read(config: &Config, state: &State, generation: u64) -> Live {
 
     // (inbound, protocol, remote, remote port, local port, service, age in
     // seconds, bytes each way)
+    type Shape<'a> = (bool, u8, IpAddr, u16, u16, Option<&'a str>, u64, [u64; 2]);
     let flood = IpAddr::V4(Ipv4Addr::new(203, 0, 113, 50));
     let peer = IpAddr::V4(neighbour(here, 31));
-    let mut shapes: Vec<(bool, u8, IpAddr, u16, u16, Option<&str>, u64, [u64; 2])> = vec![
+    let mut shapes: Vec<Shape> = vec![
         (true, 6, peer, 40122, 22, Some("sshd"), 360, [98_000, 114_000]),
         (true, 6, flood, 58210, 22, Some("sshd"), 2, [180, 0]),
         (true, 6, IpAddr::V4(Ipv4Addr::new(198, 51, 100, 7)), 49311, 3389, None, 8, [60, 0]),

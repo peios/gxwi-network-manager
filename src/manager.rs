@@ -191,6 +191,9 @@ impl ProfileDraft {
     }
 }
 
+/// A network's id, and its name, trust and preferred address as edited.
+pub type NetworkEdit = (String, Option<String>, Option<String>, Option<String>);
+
 /// A name looked up.
 #[derive(Debug, Clone, Default)]
 pub struct Lookup {
@@ -450,6 +453,11 @@ impl Manager {
             Ok(()) => {
                 self.generation += 1;
                 self.said = Some(Ok(format!("{}.", pending.what)));
+                if pending.risky
+                    && let Some(earlier) = self.keep.take()
+                {
+                    self.said = Some(Ok(format!("{}. The change before it is kept: {}.", pending.what, earlier.what.to_lowercase())));
+                }
                 if pending.risky {
                     self.keeps += 1;
                     self.keep = Some(Keep { what: pending.what.clone(), undo: pending.undo, until: Instant::now() + KEEP, number: self.keeps });
@@ -810,8 +818,9 @@ impl Manager {
         self.drawer = Some(Drawer::Network { id: id.into() });
     }
 
-    /// The network being edited, as its fields would leave it.
-    pub fn network_edit(&self, fields: &Fields) -> Option<(String, Option<String>, Option<String>, Option<String>)> {
+    /// The network being edited, as its fields would leave it: its id,
+    /// name, trust and preferred address.
+    pub fn network_edit(&self, fields: &Fields) -> Option<NetworkEdit> {
         let Some(Drawer::Network { id }) = &self.drawer else { return None };
         let opt = |s: &str| Some(s.trim().to_string()).filter(|s| !s.is_empty());
         Some((id.clone(), opt(fields.get("n-name")), opt(fields.get("n-trust")), opt(fields.get("n-req"))))
@@ -861,17 +870,41 @@ impl Manager {
         let cell = row.cells.iter().find(|c| c.col == col)?;
         let mut policy = self.config.policy.clone();
         let other = if col == Col::Private { "public" } else { "private" };
-        let flow = &mut policy.flow;
         if !open {
-            let root = cell.by.as_deref()?.split('/').next()?.to_string();
-            let rule = rules::find_mut(flow, &root)?;
-            if rule.conds.iter().any(|c| c.fact == "Network.Trust") {
-                rule.enabled = false;
-                return Some((policy, format!("Rule {root} turned off")));
+            // Every rule that would still let it through is narrowed in
+            // turn, until none does: two rules may allow the same port.
+            let mut limited = Vec::new();
+            let mut off = Vec::new();
+            let mut by = cell.by.clone();
+            for _ in 0..8 {
+                let Some(root) = by.as_deref().and_then(|b| b.split('/').next()).map(str::to_string) else { break };
+                let rule = rules::find_mut(&mut policy.flow, &root)?;
+                if rule.conds.iter().any(|c| c.fact == "Network.Trust") {
+                    rule.enabled = false;
+                    off.push(root);
+                } else {
+                    rule.conds.push(Cond::new("Network.Trust", "Equal", &[other]));
+                    limited.push(root);
+                }
+                let judge = Judge::new(&policy).ok()?;
+                match judge.result(&cell.conn, &engine::no_counts) {
+                    Ok(d) if d.passes() => by = d.by,
+                    _ => break,
+                }
             }
-            rule.conds.push(Cond::new("Network.Trust", "Equal", &[other]));
-            return Some((policy, format!("Rule {root} limited to {other} networks")));
+            let names = |list: &[String]| match list {
+                [one] => format!("Rule {one}"),
+                many => format!("Rules {}", many.join(" and ")),
+            };
+            let what = match (limited.is_empty(), off.is_empty()) {
+                (false, true) => format!("{} limited to {other} networks", names(&limited)),
+                (true, false) => format!("{} turned off", names(&off)),
+                (false, false) => format!("{} limited to {other} networks; {} turned off", names(&limited), names(&off).to_lowercase()),
+                (true, true) => return None,
+            };
+            return Some((policy, what));
         }
+        let flow = &mut policy.flow;
         let port = row.port;
         let found = flow
             .iter()
@@ -1627,7 +1660,7 @@ impl Surfaced for Manager {
 /// Bytes in hex, colon-separated or not, as netd reads `ClientId`.
 fn hex_id(text: &str) -> bool {
     let digits: String = text.chars().filter(|c| c.is_ascii_hexdigit()).collect();
-    !digits.is_empty() && digits.len() % 2 == 0 && text.chars().all(|c| c.is_ascii_hexdigit() || c == ':' || c == '-')
+    !digits.is_empty() && digits.len().is_multiple_of(2) && text.chars().all(|c| c.is_ascii_hexdigit() || c == ':' || c == '-')
 }
 
 #[cfg(test)]
@@ -1666,6 +1699,24 @@ mod tests {
         let (policy, what) = m.exposure_change(ssh, Col::Private, false).unwrap();
         assert_eq!(what, "Rule ssh turned off");
         assert!(!rules::find(&policy.flow, "ssh").unwrap().enabled);
+    }
+
+    #[test]
+    fn a_port_two_rules_allow_is_closed_by_narrowing_both() {
+        let mut m = Manager::new();
+        m.config.policy = engine::tests::seed();
+        let mut twin = rules::find(&m.config.policy.flow, "gxwi-experimental").unwrap().clone();
+        twin.name = "dev-gxwi".into();
+        m.config.policy.flow.push(twin);
+        m.config.desktop_port = 7780;
+        m.relive();
+        let rows = pages::firewall::exposure(&m, &m.config.policy);
+        let desktop = rows.iter().position(|r| r.port == 7780).unwrap();
+        let (policy, what) = m.exposure_change(desktop, Col::Private, false).unwrap();
+        assert!(what.starts_with("Rules ") && what.contains("gxwi-experimental") && what.contains("dev-gxwi"), "{what}");
+        let after = pages::firewall::exposure(&m, &policy);
+        assert!(!after[desktop].cells.iter().find(|c| c.col == Col::Private).unwrap().open());
+        assert!(after[desktop].cells.iter().find(|c| c.col == Col::Public).unwrap().open());
     }
 
     #[test]
