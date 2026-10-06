@@ -247,6 +247,9 @@ pub struct Manager {
     pub renewing: Option<String>,
     /// The permissions editor is open.
     pub editing: bool,
+    /// The person asked for the window closed while a change was being
+    /// written or waited to be kept: it goes once that is settled.
+    close_when_done: bool,
 }
 
 fn named(value: &Value, key: &str) -> String {
@@ -280,6 +283,7 @@ impl Manager {
             generation: 42,
             renewing: None,
             editing: false,
+            close_when_done: false,
         }
     }
 
@@ -468,6 +472,23 @@ impl Manager {
         }
         self.draft = None;
         self.heard_config(config, fields);
+        self.close_if_asked();
+    }
+
+    /// Once nothing is being written, lets the window go if the person asked
+    /// it to. A change still waiting to be kept is undone first, as when its
+    /// time runs out: the countdown is this process's, and goes with it.
+    fn close_if_asked(&mut self) {
+        if !self.close_when_done || self.busy.is_some() {
+            return;
+        }
+        if let Some(keep) = self.keep.take() {
+            self.undo(keep, false);
+            return;
+        }
+        if let Some(window) = self.window.upgrade() {
+            window.close();
+        }
     }
 
     /// Counts a kept change down, once a second, until it is kept or undone.
@@ -514,6 +535,7 @@ impl Manager {
                     });
                     m.draft = None;
                     m.heard_config(config, fields);
+                    m.close_if_asked();
                 });
             }
         });
@@ -1285,6 +1307,17 @@ impl Surfaced for Manager {
         }
     }
 
+    fn closing(&mut self, _fields: &mut Fields) -> bool {
+        // A change not yet kept is undone before the window goes: closing
+        // is not keeping it. One being written is waited for.
+        if self.busy.is_none() && self.keep.is_none() {
+            return true;
+        }
+        self.close_when_done = true;
+        self.close_if_asked();
+        false
+    }
+
     fn event(&mut self, name: &str, value: &Value, fields: &mut Fields) {
         let v = |key: &str| named(value, key);
         match name {
@@ -1718,6 +1751,16 @@ mod tests {
         let after = pages::firewall::exposure(&m, &policy);
         assert!(!after[desktop].cells.iter().find(|c| c.col == Col::Private).unwrap().open());
         assert!(after[desktop].cells.iter().find(|c| c.col == Col::Public).unwrap().open());
+    }
+
+    #[test]
+    fn the_window_waits_for_a_change_being_written() {
+        let mut m = Manager::new();
+        let mut fields = Fields::default();
+        assert!(m.closing(&mut fields));
+        m.busy = Some("Rule ssh turned off".into());
+        assert!(!m.closing(&mut fields));
+        assert!(m.close_when_done);
     }
 
     #[test]
