@@ -6,26 +6,28 @@ license = "MIT"
 publish = false
 
 [dependencies]
-# Beside this checkout until a libgxwi with the settings kit is released.
-libgxwi = { path = "../gxwi/libgxwi" }
+# libgxwi as of the gxwi release dev.peios.gxwi-sdk stages, which a package
+# build takes it from (gxwi's dev/pins.toml).
+libgxwi = { git = "https://github.com/peios/gxwi.git", rev = "5629140add3de075511b3379fd690fdabd06dcaf" }
 # The registry, tokens and descriptors. Every crate in one program must pin
 # the same revision: `peios-sys` links libpeios, and a program can hold only
 # one. libnetd pins this one too.
-peios = { git = "https://github.com/peios/peios-rs.git", rev = "02c87cb643c30eef6b74cd1d9d8b0ae067bed69a", package = "peios" }
+peios = { git = "https://github.com/peios/peios-rs.git", rev = "f8c84930f2b71763bcf0550df0b1420a0f63b21e", package = "peios" }
 # netd's control wire: its status, renewals and reconciles.
-libnetd = { path = "../netd/libnetd", features = ["policy"] }
+libnetd = { git = "https://github.com/peios/netd.git", rev = "23af1f6b84f3764d9327eb009ced56b2a16b7aa8", features = ["policy"] }
 # resolvd's wire: its status, a lookup's path, and flushing its cache.
-libresolv = { path = "../resolvd/libresolv" }
+libresolv = { git = "https://github.com/peios/resolvd.git", rev = "9c96d693c9672e635cc40ee1e2ea8122e64f017e" }
 # PNP's rules engine, the kernel's own: every rule is validated with it
 # before it is written, and every "why" is answered by it, so the app and
-# the machine cannot disagree about what a rule means. Pinned to the kernel
-# this app is shown on (pkm v0.21.0-alpha8): it moves with that kernel.
+# the machine cannot disagree about what a rule means. The revision
+# libnetd's "policy" feature pins: the app hands libnetd its snapshots, so
+# the two must be one crate. It moves with netd.
 pnp-core = { git = "https://github.com/peios/pkm.git", rev = "17712f8fbf4889696c1c919f17409bc15f16efa0" }
 # The firewall's live state, in the shape /dev/peios-ntfe gives it. The
 # device is the kernel's alone for now, so the state is example data in its
-# records (`live`); beside this checkout until pkm's crate is pushed.
-ntfe = { path = "../pkm/crates/ntfe" }
+# records (`live`).
+ntfe = { git = "https://github.com/peios/pkm.git", rev = "704c0e37b9794ed422a708120113dda71d4920b9" }
 # Who may bind a port, and who may query or control netd and resolvd: the
 # editor, the names of who a descriptor grants, and a descriptor changed in
 # part, kept whole as a registry value.
-gxwi-sd-editor = { path = "../gxwi-sd-editor", default-features = false, features = ["names", "splice"] }
+gxwi-sd-editor = { git = "https://github.com/peios/gxwi-sd-editor.git", rev = "27239eb3411ab82d711262bfd59e537c66c29e9e", default-features = false, features = ["names", "splice"] }

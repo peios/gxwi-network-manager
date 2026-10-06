@@ -291,6 +291,7 @@ dependencies = [
 [[package]]
 name = "gxwi-sd-editor"
 version = "0.0.1"
+source = "git+https://github.com/peios/gxwi-sd-editor.git?rev=27239eb3411ab82d711262bfd59e537c66c29e9e#27239eb3411ab82d711262bfd59e537c66c29e9e"
 dependencies = [
  "base64",
  "libauthd",
@@ -434,16 +435,16 @@ checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
 name = "libauthd"
-version = "0.0.22"
-source = "git+https://github.com/peios/authd.git?rev=4c2b7bddb0794731a22e1bad8ffe2f0affaf5d79#4c2b7bddb0794731a22e1bad8ffe2f0affaf5d79"
+version = "0.0.23"
+source = "git+https://github.com/peios/authd.git?rev=90471e3d4db127528862fb325b04edb3d4f0fc30#90471e3d4db127528862fb325b04edb3d4f0fc30"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "libauthd-client"
-version = "0.0.22"
-source = "git+https://github.com/peios/authd.git?rev=4c2b7bddb0794731a22e1bad8ffe2f0affaf5d79#4c2b7bddb0794731a22e1bad8ffe2f0affaf5d79"
+version = "0.0.23"
+source = "git+https://github.com/peios/authd.git?rev=90471e3d4db127528862fb325b04edb3d4f0fc30#90471e3d4db127528862fb325b04edb3d4f0fc30"
 dependencies = [
  "libauthd",
 ]
@@ -456,7 +457,8 @@ checksum = "ce5d3ddc6d3fa000eb1536d85e147bfe31aacaba692ed6a876f95cb7c855be78"
 
 [[package]]
 name = "libgxwi"
-version = "0.0.2"
+version = "0.0.3"
+source = "git+https://github.com/peios/gxwi.git?rev=5629140add3de075511b3379fd690fdabd06dcaf#5629140add3de075511b3379fd690fdabd06dcaf"
 dependencies = [
  "axum",
  "hyper",
@@ -481,7 +483,8 @@ dependencies = [
 
 [[package]]
 name = "libnetd"
-version = "0.1.7"
+version = "0.1.8"
+source = "git+https://github.com/peios/netd.git?rev=23af1f6b84f3764d9327eb009ced56b2a16b7aa8#23af1f6b84f3764d9327eb009ced56b2a16b7aa8"
 dependencies = [
  "peios",
  "pnp-core",
@@ -489,7 +492,8 @@ dependencies = [
 
 [[package]]
 name = "libresolv"
-version = "0.1.5"
+version = "0.1.6"
+source = "git+https://github.com/peios/resolvd.git?rev=9c96d693c9672e635cc40ee1e2ea8122e64f017e#9c96d693c9672e635cc40ee1e2ea8122e64f017e"
 
 [[package]]
 name = "log"
@@ -545,6 +549,7 @@ dependencies = [
 [[package]]
 name = "ntfe"
 version = "0.1.0"
+source = "git+https://github.com/peios/pkm.git?rev=704c0e37b9794ed422a708120113dda71d4920b9#704c0e37b9794ed422a708120113dda71d4920b9"
 dependencies = [
  "peios-uapi",
 ]
@@ -558,7 +563,7 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 [[package]]
 name = "peios"
 version = "0.4.0"
-source = "git+https://github.com/peios/peios-rs.git?rev=02c87cb643c30eef6b74cd1d9d8b0ae067bed69a#02c87cb643c30eef6b74cd1d9d8b0ae067bed69a"
+source = "git+https://github.com/peios/peios-rs.git?rev=f8c84930f2b71763bcf0550df0b1420a0f63b21e#f8c84930f2b71763bcf0550df0b1420a0f63b21e"
 dependencies = [
  "bitflags",
  "libc",
@@ -568,7 +573,7 @@ dependencies = [
 [[package]]
 name = "peios-sys"
 version = "0.3.0"
-source = "git+https://github.com/peios/peios-rs.git?rev=02c87cb643c30eef6b74cd1d9d8b0ae067bed69a#02c87cb643c30eef6b74cd1d9d8b0ae067bed69a"
+source = "git+https://github.com/peios/peios-rs.git?rev=f8c84930f2b71763bcf0550df0b1420a0f63b21e#f8c84930f2b71763bcf0550df0b1420a0f63b21e"
 dependencies = [
  "bindgen",
  "pkg-config",
@@ -577,6 +582,7 @@ dependencies = [
 [[package]]
 name = "peios-uapi"
 version = "0.1.0"
+source = "git+https://github.com/peios/pkm.git?rev=704c0e37b9794ed422a708120113dda71d4920b9#704c0e37b9794ed422a708120113dda71d4920b9"
 
 [[package]]
 name = "percent-encoding"
