@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 # libgxwi as of the gxwi release dev.peios.gxwi-sdk stages, which a package
 # build takes it from (gxwi's dev/pins.toml).
-libgxwi = { git = "https://github.com/peios/gxwi.git", rev = "5629140add3de075511b3379fd690fdabd06dcaf" }
+libgxwi = { git = "https://github.com/peios/gxwi.git", rev = "e9d86e56e8d79b4240ff5114434b4cdc0c5b1f76" }
 # The registry, tokens and descriptors. Every crate in one program must pin
 # the same revision: `peios-sys` links libpeios, and a program can hold only
 # one. libnetd pins this one too.
@@ -30,4 +30,4 @@ ntfe = { git = "https://github.com/peios/pkm.git", rev = "704c0e37b9794ed422a708
 # Who may bind a port, and who may query or control netd and resolvd: the
 # editor, the names of who a descriptor grants, and a descriptor changed in
 # part, kept whole as a registry value.
-gxwi-sd-editor = { git = "https://github.com/peios/gxwi-sd-editor.git", rev = "27239eb3411ab82d711262bfd59e537c66c29e9e", default-features = false, features = ["names", "splice"] }
+gxwi-sd-editor = { git = "https://github.com/peios/gxwi-sd-editor.git", rev = "43fee424bdfd756996a63347f31abcb6af64eb62", default-features = false, features = ["names", "splice"] }
